@@ -8,8 +8,11 @@ namespace po {
     }
     class Entries << (S,Aquamarine) >> {
         + Equal(e2 Entries) bool
+        + Contains(c Entry) bool
+        + ContainsUnifiedID(id string) bool
         + IndexByUnifiedID(uid string) int
-        + Index(id string, context string) int
+        + Index(e2 Entry) int
+        + IndexByIDAndCtx(id string, context string) int
         + IsSorted() bool
         + Sort() Entries
         + IsSortedByObsolete() bool

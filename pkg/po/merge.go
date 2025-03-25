@@ -1,9 +1,5 @@
 package po
 
-import (
-	"slices"
-)
-
 type SortMode int
 
 const (
@@ -89,10 +85,7 @@ func (f File) MergeWithConfig(config MergeConfig, files ...*File) *File {
 
 	if !config.KeepPreviousIDs {
 		for i, e := range mergedFile.Entries {
-			e.Obsolete = !slices.ContainsFunc(
-				f.Entries,
-				func(e2 Entry) bool { return e2.UnifiedID() == e.UnifiedID() },
-			)
+			e.Obsolete = !f.Entries.ContainsUnifiedID(e.UnifiedID())
 			mergedFile.Entries[i] = e
 		}
 	}

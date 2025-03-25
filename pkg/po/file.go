@@ -40,7 +40,7 @@ func (f File) Header() Header {
 }
 
 func (f *File) Set(id, context string, e Entry) {
-	index := f.Entries.Index(id, context)
+	index := f.Entries.IndexByIDAndCtx(id, context)
 	if index == -1 {
 		f.Entries = append(f.Entries, e)
 		return
@@ -57,7 +57,7 @@ func (f File) LoadByUnifiedID(uid string) string {
 }
 
 func (f File) Load(id string, context string) string {
-	i := f.Entries.Index(id, context)
+	i := f.Entries.IndexByIDAndCtx(id, context)
 	if i == -1 {
 		return ""
 	}

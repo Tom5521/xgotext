@@ -122,7 +122,7 @@ var (
 )
 
 func (e Entries) Header() (h Header) {
-	i := e.Index("", "")
+	i := e.IndexByIDAndCtx("", "")
 	if i == -1 {
 		return
 	}

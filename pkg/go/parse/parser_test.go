@@ -151,6 +151,8 @@ func main(){
 		print("no")
 	}
 
+	"hello from an anonymous string!"
+
 	a := make(map[string]string)
 	a["Hello from a key"] = "Hello from a value"
 }`
@@ -183,6 +185,7 @@ func main(){
 		"Hello From an if",
 		"Bye from an if",
 		"no",
+		"hello from an anonymous string!",
 		"Hello from a key",
 		"Hello from a value",
 	}

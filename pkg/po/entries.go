@@ -13,13 +13,25 @@ func (e Entries) Equal(e2 Entries) bool {
 	return util.Equal(e, e2)
 }
 
+func (e Entries) Contains(c Entry) bool {
+	return slices.ContainsFunc(e, func(e Entry) bool { return util.Equal(e, c) })
+}
+
+func (e Entries) ContainsUnifiedID(id string) bool {
+	return slices.ContainsFunc(e, func(e Entry) bool { return e.UnifiedID() == id })
+}
+
 func (e Entries) IndexByUnifiedID(uid string) int {
 	return slices.IndexFunc(e, func(e Entry) bool {
 		return e.UnifiedID() == uid
 	})
 }
 
-func (e Entries) Index(id, context string) int {
+func (e Entries) Index(e2 Entry) int {
+	return slices.IndexFunc(e, func(e Entry) bool { return util.Equal(e, e2) })
+}
+
+func (e Entries) IndexByIDAndCtx(id, context string) int {
 	return slices.IndexFunc(e,
 		func(e Entry) bool {
 			return e.ID == id && e.Context == context

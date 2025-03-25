@@ -171,7 +171,7 @@ func (p *PoParser) Parse() *po.File {
 	}
 
 	if p.Config.SkipHeader {
-		i := entries.Index("", "")
+		i := entries.IndexByIDAndCtx("", "")
 		if i != -1 {
 			entries = slices.Delete(entries, i, i+1)
 		}

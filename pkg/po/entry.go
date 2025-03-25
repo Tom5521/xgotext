@@ -66,29 +66,11 @@ func CompareEntryByFuzzy(a, b Entry) int {
 }
 
 func CompareEntryByLocation(a, b Entry) int {
-	switch {
-	case len(a.Locations) != 0 && len(b.Locations) == 0:
-		return 1
-	case len(a.Locations) == 0 && len(b.Locations) != 0:
-		return -1
-	case len(a.Locations) == 0 && len(b.Locations) == 0:
-		return 0
-	}
-
-	return CompareLocation(a.Locations[0], b.Locations[0])
+	return slices.CompareFunc(a.Locations, b.Locations, CompareLocation)
 }
 
 func CompareEntryByLine(a, b Entry) int {
-	switch {
-	case len(a.Locations) != 0 && len(b.Locations) == 0:
-		return 1
-	case len(a.Locations) == 0 && len(b.Locations) != 0:
-		return -1
-	case len(a.Locations) == 0 && len(b.Locations) == 0:
-		return 0
-	}
-
-	return CompareLocationByLine(a.Locations[0], b.Locations[0])
+	return slices.CompareFunc(a.Locations, b.Locations, CompareLocationByLine)
 }
 
 func CompareEntryByID(a, b Entry) int {
@@ -96,16 +78,7 @@ func CompareEntryByID(a, b Entry) int {
 }
 
 func CompareEntryByFile(a, b Entry) int {
-	switch {
-	case len(a.Locations) != 0 && len(b.Locations) == 0:
-		return 1
-	case len(a.Locations) == 0 && len(b.Locations) != 0:
-		return -1
-	case len(a.Locations) == 0 && len(b.Locations) == 0:
-		return 0
-	}
-
-	return CompareLocationByFile(a.Locations[0], b.Locations[0])
+	return slices.CompareFunc(a.Locations, b.Locations, CompareLocationByFile)
 }
 
 // Check for possible errors and inconsistencies in the entry.

@@ -91,7 +91,9 @@ func TestMoCompilerWithMsgunfmt(t *testing.T) {
 		return
 	}
 
-	parser, _ := parse.NewPoFromReader(&stdout, "lol.po", parse.PoWithSkipHeader(true))
+	parser, _ := parse.NewPoFromReader(&stdout, "lol.po",
+		parse.PoWithSkipHeader(true),
+	)
 	parsedFile := parser.Parse()
 	if err = parser.Error(); err != nil {
 		t.Error(err)
