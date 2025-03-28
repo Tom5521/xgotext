@@ -11,6 +11,7 @@ type PoConfig struct {
 	Logger          *log.Logger
 	SkipHeader      bool
 	CleanDuplicates bool
+	IgnoreComments  bool
 }
 
 func (p *PoConfig) RestoreLastCfg() {

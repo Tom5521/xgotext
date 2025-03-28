@@ -12,6 +12,11 @@ func FuzzyEqual(x, y string) bool {
 	return fuzzy.Ratio(x, y) >= 80
 }
 
+func IsSimilarButNotIdentical(x, y string) bool {
+	ratio := fuzzy.Ratio(x, y)
+	return ratio >= 80 && ratio < 100
+}
+
 func EqualPaths(x, y string) bool {
 	abs1, err := filepath.Abs(x)
 	abs2, err1 := filepath.Abs(y)

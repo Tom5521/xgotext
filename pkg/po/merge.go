@@ -1,5 +1,11 @@
 package po
 
+import (
+	"slices"
+
+	"github.com/Tom5521/xgotext/internal/util"
+)
+
 type SortMode int
 
 const (
@@ -9,6 +15,7 @@ const (
 	SortByLine
 	SortByFuzzy
 	SortByObsolete
+	NoSort
 )
 
 func (mode SortMode) SortMethod(entries Entries) func() Entries {
@@ -19,6 +26,7 @@ func (mode SortMode) SortMethod(entries Entries) func() Entries {
 		SortByLine:     entries.SortByLine,
 		SortByFuzzy:    entries.SortByFuzzy,
 		SortByObsolete: entries.SortByObsolete,
+		NoSort:         func() Entries { return entries },
 	}[mode]
 
 	if !ok {
@@ -33,6 +41,12 @@ type MergeConfig struct {
 	KeepPreviousIDs bool
 	Sort            bool
 	SortMode        SortMode
+}
+
+func NewMergeConfig(opts ...MergeOption) MergeConfig {
+	var m MergeConfig
+	m.ApplyOption(opts...)
+	return m
 }
 
 func DefaultMergeConfig() MergeConfig {
@@ -69,40 +83,48 @@ func MergeWithKeepPreviousIDs(k bool) MergeOption {
 	}
 }
 
-func (f File) MergeWithConfig(config MergeConfig, files ...*File) *File {
-	mergedFile := f
+func (f File) MergeWithConfig(config MergeConfig, files ...Entries) *File {
+	ref := f // this is only an alias for "f"
+	def := File{slices.Clone(f.Entries), f.Name}
 
-	for _, file := range files {
-		mergedFile.Name += "_" + file.Name
-		mergedFile.Entries = append(mergedFile.Entries, file.Entries...)
+	for _, f2 := range files {
+		def.Entries = append(def.Entries, f2...)
 	}
 
-	if config.FuzzyMatch {
-		mergedFile.Entries = mergedFile.Entries.FuzzySolve()
-	} else {
-		mergedFile.Entries = mergedFile.Entries.Solve()
+	// TODO: Finish this.
+	// def.Entries = def.Entries.Solve()
+
+	for i, e := range def.Entries {
+		for _, e2 := range ref.Entries {
+			if e.Context != e2.Context {
+				continue
+			}
+			if util.IsSimilarButNotIdentical(e.ID, e2.ID) {
+				e.Flags = append(e.Flags, "fuzzy")
+			}
+		}
+		def.Entries[i] = e
 	}
 
-	if !config.KeepPreviousIDs {
-		for i, e := range mergedFile.Entries {
-			e.Obsolete = !f.Entries.ContainsUnifiedID(e.UnifiedID())
-			mergedFile.Entries[i] = e
+	for i, e := range def.Entries {
+		if e.IsFuzzy() {
+			continue
+		}
+		if !ref.Entries.ContainsUnifiedID(e.UnifiedID()) {
+			e.Obsolete = true
+			def.Entries[i] = e
 		}
 	}
 
-	if config.Sort {
-		mergedFile.Entries = config.SortMode.SortMethod(mergedFile.Entries)()
-	}
-
-	return &mergedFile
+	return &def
 }
 
-func (f File) MergeWithOptions(files []*File, options ...MergeOption) *File {
+func (f File) MergeWithOptions(files []Entries, options ...MergeOption) *File {
 	var cfg MergeConfig
 	cfg.ApplyOption(options...)
 	return f.MergeWithConfig(cfg, files...)
 }
 
-func (f File) Merge(files ...*File) *File {
+func (f File) Merge(files ...Entries) *File {
 	return f.MergeWithConfig(DefaultMergeConfig(), files...)
 }

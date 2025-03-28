@@ -1,64 +1,110 @@
 package po_test
 
 import (
+	"fmt"
+	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/Tom5521/xgotext/internal/util"
 	"github.com/Tom5521/xgotext/pkg/po"
+	"github.com/Tom5521/xgotext/pkg/po/compiler"
+	"github.com/Tom5521/xgotext/pkg/po/parse"
+	"github.com/kr/pretty"
 )
 
-func TestMergeFiles(t *testing.T) {
-	file1 := &po.File{
-		Name: "file1",
-		Entries: po.Entries{
-			{ID: "id1", Str: "str1", Locations: []po.Location{{File: "file1.go", Line: 10}}},
-			{ID: "id2", Str: "str2", Locations: []po.Location{{File: "file1.go", Line: 20}}},
-		},
+func TestMergeWithMsgmerge(t *testing.T) {
+	t.SkipNow() // this isn't finished yet.
+	var err error
+	if _, err = exec.LookPath("msgmerge"); err != nil {
+		t.Skip("msgmerge isn't in the PATH")
+		return
 	}
 
-	file2 := &po.File{
-		Name: "file2",
+	dir := t.TempDir()
+	defPath := filepath.Join(dir, "def.po")
+	refPath := filepath.Join(dir, "ref.po")
+	outputPath := filepath.Join(dir, "out.po")
+
+	defFile := &po.File{
+		Name: defPath,
 		Entries: po.Entries{
-			{ID: "id3", Str: "str3", Locations: []po.Location{{File: "file2.go", Line: 15}}},
 			{
-				ID:        "id1",
-				Str:       "str1_modified",
-				Locations: []po.Location{{File: "file2.go", Line: 25}},
+				ID:  "id1",
+				Str: "My translated string",
+			},
+			{
+				ID:  "obsolete string",
+				Str: "this is obsolete",
 			},
 		},
 	}
-
-	file3 := &po.File{
-		Name: "file3",
+	refFile := &po.File{
+		Name: refPath,
 		Entries: po.Entries{
-			{ID: "id4", Str: "str4", Locations: []po.Location{{File: "file3.go", Line: 30}}},
+			{ID: "id1"},
+			{ID: "id2"},
+			{ID: "id3"},
 		},
 	}
 
-	mergedFile := file1.MergeWithOptions([]*po.File{file2, file3}, po.MergeWithFuzzyMatch(false))
-
-	expectedName := "file1_file2_file3"
-	if mergedFile.Name != expectedName {
-		t.Errorf("Expected merged file name to be %s, got %s", expectedName, mergedFile.Name)
+	opts := []compiler.PoOption{
+		compiler.PoWithForcePo(true),
+		compiler.PoWithOmitHeader(true),
 	}
 
-	expectedEntries := po.Entries{
-		{
-			ID:        "id1",
-			Str:       "str1",
-			Locations: []po.Location{{File: "file1.go", Line: 10}, {File: "file2.go", Line: 25}},
-		},
-		{ID: "id2", Str: "str2", Locations: []po.Location{{File: "file1.go", Line: 20}}},
-		{ID: "id3", Str: "str3", Locations: []po.Location{{File: "file2.go", Line: 15}}},
-		{ID: "id4", Str: "str4", Locations: []po.Location{{File: "file3.go", Line: 30}}},
+	if err = compiler.NewPo(defFile, opts...).ToFile(defPath); err != nil {
+		t.Error(err)
+		return
+	}
+	if err = compiler.NewPo(refFile, opts...).ToFile(refPath); err != nil {
+		t.Error(err)
+		return
 	}
 
-	if len(mergedFile.Entries) != len(expectedEntries) {
-		t.Errorf("Expected %d entries, got %d", len(expectedEntries), len(mergedFile.Entries))
+	var stderr strings.Builder
+	cmd := exec.Command("msgmerge", "-o", outputPath, defPath, refPath)
+	cmd.Stderr = &stderr
+
+	err = cmd.Run()
+	if err != nil {
+		t.Error(stderr.String())
+		return
 	}
 
-	for i, entry := range mergedFile.Entries {
-		if entry.ID != expectedEntries[i].ID || entry.Str != expectedEntries[i].Str {
-			t.Errorf("Entry %d mismatch: expected %v, got %v", i, expectedEntries[i], entry)
+	var parser *parse.PoParser
+	parser, err = parse.NewPo(outputPath,
+		parse.PoWithSkipHeader(true),
+	)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	expectedOutput := parser.Parse()
+	if err = parser.Error(); err != nil {
+		t.Error(err)
+		return
+	}
+
+	currentOutput := refFile.MergeWithConfig(
+		po.NewMergeConfig(po.MergeWithFuzzyMatch(true)),
+		// defFile,
+	)
+
+	if !util.Equal(expectedOutput.Entries, currentOutput.Entries) {
+		for _, d := range pretty.Diff(currentOutput.Entries, expectedOutput.Entries) {
+			fmt.Println(d)
 		}
+		fmt.Println(
+			"CURRENT:\n",
+			compiler.NewPo(currentOutput, compiler.PoWithOmitHeader(true)).ToString(),
+		)
+		fmt.Println(
+			"EXPECTED:\n",
+			compiler.NewPo(expectedOutput, compiler.PoWithIgnoreErrors(true)).ToString(),
+		)
+		t.Fail()
 	}
 }

@@ -15,7 +15,7 @@ gen-uml:
   plantuml -theme spacelab ./pkg/go/parse/structure.puml
   plantuml -theme spacelab ./pkg/po/parse/structure.puml
 clean:
-  rm $(find . -name "*.po") \
+  rm -rf $(find . -name "*.po") \
   $(find . -name "*.mo") \
   $(find . -name "*.log")
 gen-diff:

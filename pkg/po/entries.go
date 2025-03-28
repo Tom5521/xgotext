@@ -138,41 +138,70 @@ func (e Entries) CleanDuplicates() Entries {
 	return cleaned
 }
 
-// Solve processes a list of translation entries and merges those with the same ID and context,
-// keeping the most complete translation. If two entries have the same ID and context, the one
-// with a non-empty translation string is retained. Additionally, if the entries are similar but not.
-func (e Entries) Solve() Entries {
+// Returns the result of the merging of e1+e2, if no merging is desired, nil is returned.
+type SolveFunc func(e1, e2 Entry) (merged *Entry)
+
+func (e Entries) SolveFunc(f SolveFunc) Entries {
 	var cleaned Entries
-	seenID := make(map[string]int)
+	seen := make(map[string]int)
 
 	for _, entry := range e {
 		uid := entry.UnifiedID()
-		idIndex, ok := seenID[uid]
+		idIndex, ok := seen[uid]
 		if ok {
-			// If the new entry has a translation and the previous one does not, replace it.
-			if entry.IsPlural() {
-				if len(entry.Plurals) != 0 && len(cleaned[idIndex].Plurals) > 0 {
-					cleaned[idIndex].Plurals = append(
-						entry.Plurals,
-						cleaned[idIndex].Plurals...).Solve()
-				}
-			} else if entry.Str != "" && cleaned[idIndex].Str == "" {
-				cleaned[idIndex] = entry
+			e2 := cleaned[idIndex]
+			merged := f(entry, e2)
+			if merged != nil {
+				cleaned[idIndex] = *merged
 			}
 
-			// Combine the locations of the merged entries.
-			cleaned[idIndex].Locations = append(
-				cleaned[idIndex].Locations,
-				entry.Locations...)
 			continue
 		}
-		seenID[uid] = len(cleaned)
+		seen[uid] = len(cleaned)
 		cleaned = append(cleaned, entry)
 	}
 
 	return cleaned
 }
 
+/*
+// TODO: Finish this.
+
+// Solve processes a list of translation entries and merges those with the same ID and context,
+// keeping the most complete translation. If two entries have the same ID and context, the one
+// with a non-empty translation string is retained. Additionally, if the entries are similar but not.
+
+	func (e Entries) Solve() Entries {
+		return e.SolveWithUIDPriority(nil)
+	}
+
+	func baseSolveFunc(f func(e1, e2 Entry) bool) SolveFunc {
+		return func(e1, e2 Entry) (merged *Entry) {
+		}
+	}
+
+func (e Entries) Solve() Entries {
+}
+
+	func (e Entries) SolveWithPriority(preferred Entries) Entries {
+		return e.SolveFunc(func(e1, e2 Entry) (merged *Entry) {
+			if e1.IsPlural() {
+			} else {
+			}
+		})
+	}
+
+	func (e Entries) SolveWithUIDPriority(preferredUIDs []string) Entries {
+		return e.SolveFunc(baseSolveFunc(func(e1, e2 Entry) bool {
+			e1IsPreferred := slices.Contains(preferredUIDs, e1.UnifiedID())
+			e2IsPreferred := slices.Contains(preferredUIDs, e2.UnifiedID())
+
+			if e1IsPreferred == e2IsPreferred {
+				return false
+			}
+		}))
+	}
+*/
 func (e Entries) CleanFuzzy() Entries {
 	e = slices.DeleteFunc(e, func(e Entry) bool {
 		return e.IsFuzzy()
@@ -184,44 +213,4 @@ func (e Entries) FuzzyFind(id, context string) int {
 	return slices.IndexFunc(e, func(e Entry) bool {
 		return util.FuzzyEqual(id, e.ID) && e.Context == context
 	})
-}
-
-func (e Entries) FuzzySolve() (cleaned Entries) {
-	var dupedGroups []Entries
-
-	find := func(e Entry) int {
-		for i, group := range dupedGroups {
-			if len(group) > 0 {
-				if util.FuzzyEqual(group[0].ID, e.ID) &&
-					group[0].Context == e.Context {
-					return i
-				}
-			}
-		}
-		return -1
-	}
-
-	// Collect duplicates
-	for _, entry := range e {
-		groupIndex := find(entry)
-		if groupIndex == -1 {
-			dupedGroups = append(dupedGroups, []Entry{entry})
-		} else {
-			dupedGroups[groupIndex] = append(dupedGroups[groupIndex], entry)
-		}
-	}
-	// Clean duplicates
-	for _, group := range dupedGroups {
-		if len(group) == 1 {
-			cleaned = append(cleaned, group[0])
-			continue
-		}
-		entry := group.Solve()[0]
-		if !entry.IsFuzzy() {
-			entry.Flags = append(entry.Flags, "fuzzy")
-		}
-		cleaned = append(cleaned, entry)
-	}
-
-	return
 }

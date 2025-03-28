@@ -76,7 +76,7 @@ func flen(value any) u32 {
 
 // Code translated from: https://github.com/izimobil/polib/blob/master/polib.py#L553
 func (mc *MoCompiler) writeTo(writer io.Writer) error {
-	entries := mc.File.Entries.FuzzySolve().CleanFuzzy().CleanObsoletes()
+	entries := mc.File.Entries.Solve().CleanFuzzy().CleanObsoletes()
 
 	if mc.Config.Sort {
 		entries = mc.Config.SortMode.SortMethod(entries)()

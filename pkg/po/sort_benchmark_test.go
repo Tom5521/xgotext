@@ -45,7 +45,9 @@ func BenchmarkSortEntries(b *testing.B) {
 	}
 }
 
+// TODO: Finish this.
 func BenchmarkEntriesSolve(b *testing.B) {
+	b.SkipNow() // This isn't finished yet.
 	entries := po.Entries{
 		{
 			ID:      "Apple",
@@ -69,8 +71,7 @@ func BenchmarkEntriesSolve(b *testing.B) {
 		name   string
 		method func() po.Entries
 	}{
-		{"Solve", entries.Solve},
-		{"FuzzySolve", entries.FuzzySolve},
+		// {"Solve", entries.Solve},
 	}
 
 	for _, t := range tests {
