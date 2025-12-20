@@ -49,7 +49,6 @@ type PoConfig struct {
 	UseCustomObsoletePrefix  bool
 	CustomObsoletePrefixRune rune
 	NoColor                  bool
-	Highlight                CSSClassesHighlighting
 }
 
 func NewPoConfigFromOptions(opts ...PoOption) PoConfig {
@@ -102,12 +101,6 @@ type PoOption func(*PoConfig)
 func PoWithNoColor(v bool) PoOption {
 	return func(pc *PoConfig) {
 		pc.NoColor = v
-	}
-}
-
-func PoWithHighlight(h CSSClassesHighlighting) PoOption {
-	return func(pc *PoConfig) {
-		pc.Highlight = h
 	}
 }
 

@@ -27,18 +27,8 @@ type (
 	}
 )
 
-func SearchSymbol(t lexer.TokenType) string {
-	for k, tt := range PoSymbols {
-		if tt == t {
-			return k
-		}
-	}
-	return ""
-}
-
 var (
-	PoSymbols = PoLexer.Symbols()
-	PoRules   = []lexer.SimpleRule{
+	PoRules = []lexer.SimpleRule{
 		{Name: "WS", Pattern: `\s+`},
 		{Name: "Integer", Pattern: `\d+`},
 		{Name: "LB", Pattern: `\[`},
@@ -50,7 +40,15 @@ var (
 		{Name: "Msgstr", Pattern: "msgstr"},
 		{Name: "Comment", Pattern: "#[^\n]*"},
 	}
-	PoLexer  = lexer.MustSimple(PoRules)
+	PoLexer      = lexer.MustSimple(PoRules)
+	PoSymbols    = PoLexer.Symbols()
+	PoAltSymbols = func() map[lexer.TokenType]string {
+		mp := make(map[lexer.TokenType]string, len(PoSymbols))
+		for k, tt := range PoSymbols {
+			mp[tt] = k
+		}
+		return mp
+	}()
 	PoParser = participle.MustBuild[poFile](
 		participle.Lexer(PoLexer),
 		participle.Unquote("String"),

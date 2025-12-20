@@ -5,66 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Tom5521/gotext-tools/v2/internal/color"
-	"github.com/Tom5521/gotext-tools/v2/internal/slices"
 	"github.com/Tom5521/gotext-tools/v2/pkg/po"
 )
 
 type entryBuilder struct {
 	po.Entry
 	Config PoConfig
-}
-
-func (eb *entryBuilder) applyStyle(str string, names ...string) string {
-	if eb.Config.Highlight == nil {
-		return str
-	}
-
-	name := strings.Join(names, " ")
-	properties, found := eb.Config.Highlight[name]
-	if !found {
-		if len(names) > 1 {
-			return eb.applyStyle(str, slices.Delete(names, 0, 1)...)
-		}
-
-		return str
-	}
-	str = applyColor(properties.BackgroundColor, str)
-	str = applyColor(properties.Color, str)
-	str = applyWeight(properties.FontWeight, str)
-	str = applyStyle(properties.FontStyle, str)
-	str = applyDecoration(properties.TextDecoration, str)
-	return str
-}
-
-func applyDecoration(d HighlightTextDecoration, str string) string {
-	if d != TextDecorationUnderline {
-		return str
-	}
-	return color.Underline.Sprint(str)
-}
-
-func applyStyle(s HighlightFontStyle, str string) string {
-	switch s {
-	case FontStyleItalic, FontStyleOblique:
-		return color.Italic.Sprint(str)
-	}
-
-	return str
-}
-
-func applyWeight(w HighlightFontWeight, str string) string {
-	if w != FontWeightBold {
-		return str
-	}
-	return color.Bold.Sprint(str)
-}
-
-func applyColor(c TermColorer, str string) string {
-	if c == nil {
-		return str
-	}
-	return c.Sprint(str)
 }
 
 func (eb *entryBuilder) BuildEntry() []byte {
@@ -139,14 +85,14 @@ func (eb *entryBuilder) msgid() string {
 	var b strings.Builder
 	if eb.HasContext() {
 		b.WriteString(eb.keyword("msgctxt"))
-		b.WriteString(eb.string(eb.Context, "msgid"))
+		b.WriteString(eb.string(eb.Context))
 	}
 	b.WriteString(eb.keyword("msgid"))
-	b.WriteString(eb.string(eb.ID, "msgid"))
+	b.WriteString(eb.string(eb.ID))
 
 	if eb.IsPlural() {
 		b.WriteString(eb.keyword("msgid_plural"))
-		b.WriteString(eb.string(eb.Plural, "msgid"))
+		b.WriteString(eb.string(eb.Plural))
 	}
 
 	return b.String()
@@ -157,7 +103,7 @@ func (eb *entryBuilder) msgstr() string {
 	const format = "msgstr[%d]"
 	if eb.IsPlural() {
 		if len(eb.Plurals) == 0 {
-			id := eb.string(eb.ID, "msgstr")
+			id := eb.string(eb.ID)
 			for i := 0; i < 2; i++ {
 				fmt.Fprint(&msgstr, eb.keyword(fmt.Sprintf(format, i)))
 				fmt.Fprint(&msgstr, id)
@@ -169,7 +115,6 @@ func (eb *entryBuilder) msgstr() string {
 			fmt.Fprint(&msgstr,
 				eb.string(
 					eb.Config.MsgstrPrefix+pe.Str+eb.Config.MsgstrSuffix,
-					"msgstr",
 				),
 			)
 		}
@@ -180,7 +125,6 @@ func (eb *entryBuilder) msgstr() string {
 	fmt.Fprint(&msgstr, eb.keyword("msgstr"))
 	fmt.Fprint(&msgstr, eb.string(
 		eb.Config.MsgstrPrefix+eb.Str+eb.Config.MsgstrSuffix,
-		"msgstr",
 	))
 
 	return msgstr.String()
@@ -194,7 +138,7 @@ func (eb *entryBuilder) comment() string {
 	b.WriteString(eb.flagComment())
 	b.WriteString(eb.previousComment())
 
-	return eb.applyStyle(b.String(), "comment")
+	return b.String()
 }
 
 func (eb *entryBuilder) translatorComment() string {
@@ -259,7 +203,7 @@ func (eb *entryBuilder) previousComment() string {
 	return b.String()
 }
 
-func (eb *entryBuilder) string(str string, styles ...string) string {
+func (eb *entryBuilder) string(str string) string {
 	var builder strings.Builder
 	if eb.Config.WordWrap {
 		lines := strings.Split(str, "\n")
@@ -267,34 +211,20 @@ func (eb *entryBuilder) string(str string, styles ...string) string {
 			if i != len(lines)-1 {
 				line += "\n"
 			}
-			fmt.Fprint(&builder, `"`)
-			fmt.Fprint(&builder, eb.text(escapePOString(line),
-				slices.Delete(styles, 0, 1)...))
-			builder.WriteString(eb.applyStyle(`"`, "string") + "\n")
+			fmt.Fprintf(&builder, "\"%s\"\n", escapePOString(line))
 		}
-		return eb.applyStyle(
-			builder.String(),
-			append(styles, "string")...,
-		)
+		return builder.String()
 	}
 
-	fmt.Fprint(&builder, `"`)
-	fmt.Fprint(&builder, eb.text(escapePOString(str),
-		slices.Delete(styles, 0, 1)...,
-	))
-	builder.WriteString(eb.applyStyle(`"`, "string") + "\n")
-	// fmt.Fprintf(&builder, "\"%s\"\n", escapePOString(str))
+	fmt.Fprintf(&builder, "\"%s\"\n", escapePOString(str))
 
-	return eb.applyStyle(
-		builder.String(),
-		append(styles, "string")...,
-	)
+	return builder.String()
 }
 
-func (eb *entryBuilder) text(str string, styles ...string) string {
-	return eb.applyStyle(str, append(styles, "text")...)
+func (eb *entryBuilder) text(str string) string {
+	return str
 }
 
 func (eb *entryBuilder) keyword(kw string) string {
-	return eb.applyStyle(kw, "keyword") + " "
+	return kw + " "
 }

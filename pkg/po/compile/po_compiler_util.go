@@ -1,7 +1,6 @@
 package compile
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"strconv"
@@ -62,26 +61,6 @@ func escapePOString(s string) string {
 		}
 	}
 	return buf.String()
-}
-
-func (c PoCompiler) highlightFile(
-	file []byte,
-	buffer *bufio.Writer,
-	outputWriter io.Writer,
-) error {
-	c.info("highlighting info...")
-	h, err := HighlightFromBytes(
-		c.Config.Highlight,
-		c.File.Name,
-		file,
-	)
-	if err != nil {
-		return err
-	}
-	buffer.Reset(outputWriter)
-	buffer.Write(h)
-
-	return nil
 }
 
 func (c PoCompiler) writeHeader(writer io.Writer, entries *po.Entries, eb *entryBuilder) error {

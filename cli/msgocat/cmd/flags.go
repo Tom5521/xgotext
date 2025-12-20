@@ -3,10 +3,8 @@ package cmd
 import (
 	"errors"
 	"math"
-	"os"
 
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 
 	"github.com/Tom5521/gotext-tools/v2/pkg/po"
 	"github.com/Tom5521/gotext-tools/v2/pkg/po/compile"
@@ -121,16 +119,6 @@ func initCfg(cmd *cobra.Command, args []string) error {
 		string(compile.PoLocationModeFull),
 		string(compile.PoLocationModeNever):
 		compilerCfg.AddLocation = compile.PoLocationMode(addLocation)
-	}
-
-	switch color {
-	case "auto":
-		if !term.IsTerminal(int(os.Stdout.Fd())) || output != "-" {
-			break
-		}
-		fallthrough
-	case "always":
-		compilerCfg.Highlight = compile.TestHighlight
 	}
 
 	return nil

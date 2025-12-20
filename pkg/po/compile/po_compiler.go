@@ -95,14 +95,9 @@ func (c *PoCompiler) ToBytesWithOptions(opts ...PoOption) []byte {
 func (c PoCompiler) ToWriter(outputWriter io.Writer) error {
 	entries := c.File.Entries
 
-	var highlightBackup *bytes.Buffer
 	buffer := bufio.NewWriter(outputWriter)
 
 	var writer io.Writer = buffer
-	if c.Config.Highlight != nil {
-		highlightBackup = &bytes.Buffer{}
-		writer = io.MultiWriter(buffer, highlightBackup)
-	}
 
 	if c.Config.OmitHeader {
 		i := c.File.Index("", "")
@@ -125,13 +120,6 @@ func (c PoCompiler) ToWriter(outputWriter io.Writer) error {
 	err := c.compileEntries(writer, &eb, entries)
 	if err != nil {
 		return c.error("error compiling entries: %w", err)
-	}
-
-	if c.Config.Highlight != nil {
-		/* 		err = c.highlightFile(highlightBackup.Bytes(), buffer, outputWriter)
-		   		if err != nil {
-		   			return c.error("error highlighting output: %w", err)
-		   		} */
 	}
 
 	err = buffer.Flush()

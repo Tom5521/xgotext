@@ -1,13 +1,10 @@
 package cmd
 
 import (
-	"os"
-
 	goparse "github.com/Tom5521/gotext-tools/v2/pkg/go/parse"
 	"github.com/Tom5521/gotext-tools/v2/pkg/po"
 	"github.com/Tom5521/gotext-tools/v2/pkg/po/compile"
 	poparse "github.com/Tom5521/gotext-tools/v2/pkg/po/parse"
-	"golang.org/x/term"
 )
 
 var (
@@ -47,16 +44,6 @@ func initConfig() {
 		HeaderComments:  true,
 		HeaderFields:    true,
 		WordWrap:        wordWrap,
-	}
-
-	switch color {
-	case "auto":
-		if !term.IsTerminal(int(os.Stdout.Fd())) || output != "-" {
-			break
-		}
-		fallthrough
-	case "always":
-		CompilerCfg.Highlight = compile.DefaultHighlight
 	}
 
 	PoParserCfg = poparse.PoConfig{

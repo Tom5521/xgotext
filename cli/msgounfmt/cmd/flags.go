@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/Tom5521/gotext-tools/v2/pkg/po/compile"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 var (
@@ -43,16 +40,6 @@ var compilerCfg = compile.DefaultPoConfig()
 func initCfg(cmd *cobra.Command, args []string) error {
 	compilerCfg.WordWrap = !noWrap
 	compilerCfg.ForcePo = forcePo
-
-	switch color {
-	case "auto":
-		if !term.IsTerminal(int(os.Stdout.Fd())) || output != "-" {
-			break
-		}
-		fallthrough
-	case "always":
-		compilerCfg.Highlight = compile.DefaultHighlight
-	}
 
 	return nil
 }
